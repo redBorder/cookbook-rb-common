@@ -4,7 +4,7 @@
 #
 # Copyright 2024, redborder
 #
-# All rights reserved - Do Not Redistribute
+# AFFERO GENERAL PUBLIC LICENSE V 
 #
 
 rb_common_config "config" do
