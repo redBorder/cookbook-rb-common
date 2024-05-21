@@ -7,7 +7,7 @@ action :configure do
   execute "ulimit -Sn #{node['redborder']['nofile']['soft']}" do
     not_if "ulimit -Sn | grep #{node['redborder']['nofile']['soft']}"
   end
- 
+
   # hard
   execute "ulimit -Hn #{node['redborder']['nofile']['hard']}" do
     not_if "ulimit -Hn | grep #{node['redborder']['nofile']['hard']}"
