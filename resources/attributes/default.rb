@@ -3,6 +3,6 @@
 
 
 # nofile settings (ulimits)
-default[:redborder][:ulimit]                     = {}
-default[:redborder][:ulimit][:soft]              = "postfix"
-default[:redborder][:ulimit][:hard]              = {}
+default[:redborder][:nofile]                     = {}
+default[:redborder][:nofile][:soft]              = 8192
+default[:redborder][:nofile][:hard]              = 8192

@@ -1,10 +1,12 @@
 #
-# Cookbook Name:: common
+# Cookbook Name:: rb-common
 # Recipe:: default
 #
 # Copyright 2024, redborder
 #
-# AFFERO GENERAL PUBLIC LICENSE V3
+# All rights reserved - Do Not Redistribute
 #
 
-include_recipe 'rb-common::configure'
+rb_common_config "config" do
+  action :configure
+end
