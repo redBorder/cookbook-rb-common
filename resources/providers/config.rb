@@ -1,7 +1,5 @@
-# Cookbook Name:: rb-common
-#
+# Cookbook:: rb-common
 # Provider:: config
-#
 
 action :configure do
   # nofile settings
@@ -10,7 +8,7 @@ action :configure do
     not_if "ulimit -Sn | grep #{node['redborder']['nofile']['soft']}"
   end
  
-  # hard 
+  # hard
   execute "ulimit -Hn #{node['redborder']['nofile']['hard']}" do
     not_if "ulimit -Hn | grep #{node['redborder']['nofile']['hard']}"
   end
@@ -22,7 +20,7 @@ action :configure do
     owner 'root'
     mode '644'
     retries 2
-    variables(soft: node['redborder']['nofile']['soft'], 
+    variables(soft: node['redborder']['nofile']['soft'],
               hard: node['redborder']['nofile']['hard'])
   end
 end
