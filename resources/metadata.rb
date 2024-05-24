@@ -1,0 +1,6 @@
+name             'rb-common'
+maintainer       'Miguel Negron'
+maintainer_email 'manegron@redborder.com'
+license          'All rights reserved'
+description      'Redborder common system settings'
+version          '0.0.1'
