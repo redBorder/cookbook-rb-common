@@ -3,14 +3,15 @@
 
 action :configure do
   # nofile settings
-  # soft
-  execute "ulimit -Sn #{node['redborder']['nofile']['soft']}" do
-    not_if "ulimit -Sn | grep #{node['redborder']['nofile']['soft']}"
-  end
 
   # hard
   execute "ulimit -Hn #{node['redborder']['nofile']['hard']}" do
     not_if "ulimit -Hn | grep #{node['redborder']['nofile']['hard']}"
+  end
+
+  # soft
+  execute "ulimit -Sn #{node['redborder']['nofile']['soft']}" do
+    not_if "ulimit -Sn | grep #{node['redborder']['nofile']['soft']}"
   end
 
   template '/etc/security/limits.d/10-nofile.conf' do
