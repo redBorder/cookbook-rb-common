@@ -23,6 +23,9 @@ chmod -R 0755 %{buildroot}/var/chef/cookbooks/rb-common
 install -D -m 0644 README.md %{buildroot}/var/chef/cookbooks/rb-common/README.md
 
 %pre
+if [ -d /var/chef/cookbooks/rb-common ]; then
+    rm -rf /var/chef/cookbooks/rb-common
+fi
 
 %post
 case "$1" in
@@ -38,7 +41,9 @@ esac
 
 %postun
 # Deletes directory when uninstall/update the package
-rm -rf /var/chef/cookbooks/rb-common
+if [ "$1" = 0 ] && [ -d /var/chef/cookbooks/rb-common ]; then
+  rm -rf /var/chef/cookbooks/rb-common
+fi
 
 %files
 %defattr(0755,root,root)
