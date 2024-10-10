@@ -4,7 +4,7 @@
 action :configure do
   # nofile settings
   hard = new_resource.hard
-  soft = new_resource.soft  
+  soft = new_resource.soft
 
   # hard
   execute "ulimit -Hn #{hard}" do
