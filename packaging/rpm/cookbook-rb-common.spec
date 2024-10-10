@@ -36,6 +36,10 @@ case "$1" in
   ;;
 esac
 
+%postun
+# Deletes directory when uninstall/update the package
+rm -rf /var/chef/cookbooks/rb-common
+
 %files
 %defattr(0755,root,root)
 /var/chef/cookbooks/rb-common
