@@ -3,15 +3,17 @@
 
 action :configure do
   # nofile settings
+  hard = new_resource.hard
+  soft = new_resource.soft  
 
   # hard
-  execute "ulimit -Hn #{node.default['redborder']['nofile']['hard']}" do
-    not_if "ulimit -Hn | grep #{node.default['redborder']['nofile']['hard']}"
+  execute "ulimit -Hn #{hard}" do
+    not_if "ulimit -Hn | grep #{hard}"
   end
 
   # soft
-  execute "ulimit -Sn #{node.default['redborder']['nofile']['soft']}" do
-    not_if "ulimit -Sn | grep #{node.default['redborder']['nofile']['soft']}"
+  execute "ulimit -Sn #{soft}" do
+    not_if "ulimit -Sn | grep #{soft}"
   end
 
   template '/etc/security/limits.d/10-nofile.conf' do
@@ -21,7 +23,7 @@ action :configure do
     owner 'root'
     mode '644'
     retries 2
-    variables(soft: node.default['redborder']['nofile']['soft'],
-              hard: node.default['redborder']['nofile']['hard'])
+    variables(soft: soft,
+              hard: hard)
   end
 end
