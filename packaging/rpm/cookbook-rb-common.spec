@@ -40,7 +40,7 @@ case "$1" in
 esac
 
 %postun
-# Deletes directory when uninstall/update the package
+# Deletes directory when uninstall the package
 if [ "$1" = 0 ] && [ -d /var/chef/cookbooks/rb-common ]; then
   rm -rf /var/chef/cookbooks/rb-common
 fi

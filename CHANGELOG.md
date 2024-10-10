@@ -1,9 +1,14 @@
 cookbook-rb-common CHANGELOG
 ===============
 
+## 3.0.1
+
+  - Miguel Negrón
+    - [1f12301] Add pre and postun to clean the cookbook
+
 ## 3.0.0
 
-  - Miguel Negron
+  - Miguel Negrón
     - [83c10e8] Add pre and postun
     - [05bf51d] Bump version
     - [43ddd82] remove files on update/uninstall
@@ -24,7 +29,7 @@ cookbook-rb-common CHANGELOG
 
 ## 2.0.0
 
-  - Miguel Negron
+  - Miguel Negrón
     - [43ddd82] remove files on update/uninstall
     - [1a7aaae] Bump version
     - [20db73c] We dont need ulimit command with file is ok
@@ -43,7 +48,7 @@ cookbook-rb-common CHANGELOG
 
 ## 1.0.0
 
-  - Miguel Negron
+  - Miguel Negrón
     - [20db73c] We dont need ulimit command with file is ok
     - [052984f] pass lint
     - [6b32abb] Use resources instead of node
@@ -60,7 +65,7 @@ cookbook-rb-common CHANGELOG
 
 ## 0.3.0
 
-  - Miguel Negron
+  - Miguel Negrón
     - [07e3131] Use default values
     - [b2636e5] Bump version
     - [31f48c6] Swap order on change limits
@@ -73,7 +78,7 @@ cookbook-rb-common CHANGELOG
 
 ## 0.2.0
 
-  - Miguel Negron
+  - Miguel Negrón
     - [31f48c6] Swap order on change limits
     - [671a35f] Bump version
     - [f744111] bugfix/#18983_rlimit_nginx_problem
@@ -84,7 +89,7 @@ cookbook-rb-common CHANGELOG
 
 ## 0.1.0
 
-  - Miguel Negron
+  - Miguel Negrón
     - [f744111] bugfix/#18983_rlimit_nginx_problem
   - Miguel Negrón
     - [9055703] Update README.md
