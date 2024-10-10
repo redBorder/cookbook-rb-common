@@ -54,5 +54,8 @@ fi
 %doc
 
 %changelog
+* Thu Oct 10 2024 Miguel Negrón <manegron@redborder.com>
+- Add pre and postun
+
 * Thu May 21 2024 Miguel Negrón <manegron@redborder.com>
 - Inital version
