@@ -42,7 +42,7 @@ action :configure do
       retries 2
       variables(sensor_role: sensor_role, sensor_id: sensor_id)
     end
-    
+
     template '/etc/chef/role-once.json' do
       source 'role-once.json.erb'
       cookbook 'rb-common'
