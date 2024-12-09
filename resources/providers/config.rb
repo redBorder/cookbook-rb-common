@@ -19,13 +19,9 @@ action :configure do
   end
 
   if sensor_role
-    sensor_id = node["redborder"]["sensor_id"]
-    if sensor_id.nil?
-      sensor_id = 0
-    else
-      sensor_id = sensor_id.to_i
-    end
-    
+    sensor_id = node['redborder']['sensor_id']
+    sensor_id = sensor_id.nil? ? 0 : sensor_id.to_i
+
     template '/etc/rb-id' do
       source 'variable.erb'
       cookbook 'rb-common'
