@@ -1,7 +1,7 @@
 {
   "run_list": [
     "role[<%= "#{@sensor_role}" %>]",
-    "role[<%= @sensor_id>0 ? "rBsensor-#{@sensor_id}" : "proxy-sensor" %>]"
+    "role[<%= @sensor_id>0 ? "rBsensor-#{@sensor_id}" : "{@sensor_role}" %>]"
   ],
   "redborder": {
     "force-run-once": false
