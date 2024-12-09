@@ -1,6 +1,11 @@
 cookbook-rb-common CHANGELOG
 ===============
 
+## 4.0.0
+
+  - Miguel Negrón
+    - [ca06002] Add rb sensor id and role configuration
+
 ## 3.0.1
 
   - Miguel Negrón
