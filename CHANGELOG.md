@@ -1,6 +1,11 @@
 cookbook-rb-common CHANGELOG
 ===============
 
+## 4.0.1
+
+  - jnavarrorb
+    - [35e5f14] Remove executable permissions on non-executable files
+
 ## 4.0.0
 
   - Miguel Negrón
