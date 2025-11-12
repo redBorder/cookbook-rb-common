@@ -59,7 +59,7 @@ action :configure do
     source 'cli_banner.erb'
     owner 'root'
     owner 'root'
-    mode 0644
+    mode '644'
     retries 2
   end
 
@@ -73,7 +73,7 @@ action :configure do
     cookbook 'rb-common'
     owner 'root'
     group 'root'
-    mode 0755
+    mode '755'
     retries 2
     notifies :restart, 'service[sshd]', :delayed
   end
