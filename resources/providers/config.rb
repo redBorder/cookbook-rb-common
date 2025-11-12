@@ -77,5 +77,4 @@ action :configure do
     retries 2
     notifies :restart, 'service[sshd]', :delayed
   end
-
 end
