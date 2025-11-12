@@ -53,4 +53,29 @@ action :configure do
       variables(sensor_role: sensor_role, sensor_id: sensor_id)
     end
   end
+
+  # CLI Banner configuration
+  template "/etc/cli_banner" do
+    source "cli_banner.erb"
+    owner "root"
+    owner "root"
+    mode 0644
+    retries 2
+  end
+
+  service 'sshd' do
+    action :nothing
+  end
+
+  # ssh configuration
+  template "/etc/ssh/sshd_config" do
+    source "sshd_config.erb"
+    cookbook 'rb-common'
+    owner "root"
+    group "root"
+    mode 0755
+    retries 2
+    notifies :restart, "service[sshd]", :delayed
+  end
+
 end
