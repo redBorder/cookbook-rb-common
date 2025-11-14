@@ -1,6 +1,11 @@
 cookbook-rb-common CHANGELOG
 ===============
 
+## 4.0.2
+
+  - vimesa
+    - [ed1616a] Add banner cli
+
 ## 4.0.1
 
   - jnavarrorb
