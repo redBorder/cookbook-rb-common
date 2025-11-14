@@ -57,6 +57,7 @@ action :configure do
   # CLI Banner configuration
   template '/etc/cli_banner' do
     source 'cli_banner.erb'
+    cookbook 'rb-common'
     owner 'root'
     owner 'root'
     mode '644'
