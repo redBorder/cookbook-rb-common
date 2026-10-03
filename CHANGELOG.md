@@ -1,6 +1,11 @@
 cookbook-rb-common CHANGELOG
 ===============
 
+## 4.0.3
+
+  - manegron
+    - [7dd3e4d] Upload cookbook only if opscode-erchef is active
+
 ## 4.0.2
 
   - vimesa
