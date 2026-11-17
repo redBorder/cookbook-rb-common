@@ -11,6 +11,10 @@
 # The current swap device: in fstab as swap and still carrying a swap signature.
 # Checking both matters: crypttab's "swap" option formats the device.
 swap_dev = nil
+# nofail + a device timeout: systemd-cryptsetup can race with udev after it formats the device, and the crypttab
+# generator gives /dev/mapper/swap no timeout, so a boot could wait forever. Then the box boots without swap instead
+# (nothing reaches the disk either way).
+SWAP_FSTAB_LINE = '/dev/mapper/swap none swap defaults,nofail,x-systemd.device-timeout=60s 0 0'.freeze unless defined?(SWAP_FSTAB_LINE)
 if ::File.exist?('/etc/fstab')
   ::File.readlines('/etc/fstab').each do |line|
     f = line.split
@@ -42,7 +46,7 @@ if swap_dev
     block do
       fstab = ::File.read('/etc/fstab').lines.map do |l|
         f = l.split
-        !f.empty? && f[0] == swap_dev && f[2] == 'swap' ? l.sub(swap_dev, '/dev/mapper/swap') : l
+        !f.empty? && f[0] == swap_dev && f[2] == 'swap' ? "#{SWAP_FSTAB_LINE}\n" : l
       end
       ::File.write('/etc/fstab', fstab.join)
     end
@@ -60,6 +64,28 @@ if swap_dev
   else
     Chef::Log.warn("harden_secrets: #{swap_used_kb} kB in swap, not enough free RAM to switch now; encrypted swap starts at next boot")
   end
+end
+
+ruby_block 'Encrypted swap never blocks the boot' do
+  block do
+    fstab = ::File.read('/etc/fstab').lines.map do |l|
+      f = l.split
+      !f.empty? && f[0] == '/dev/mapper/swap' && f[2] == 'swap' ? "#{SWAP_FSTAB_LINE}\n" : l
+    end
+    ::File.write('/etc/fstab', fstab.join)
+  end
+  only_if do
+    ::File.exist?('/etc/fstab') && ::File.readlines('/etc/fstab').any? do |l|
+      f = l.split
+      !f.empty? && f[0] == '/dev/mapper/swap' && f[2] == 'swap' && !f[3].to_s.include?('x-systemd.device-timeout')
+    end
+  end
+  notifies :run, 'execute[systemctl daemon-reload (fstab)]', :immediately
+end
+
+execute 'systemctl daemon-reload (fstab)' do
+  command 'systemctl daemon-reload'
+  action :nothing
 end
 
 ##############################
