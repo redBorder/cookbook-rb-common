@@ -2,7 +2,8 @@
 # Recipe:: harden_secrets
 #
 # Keeps memory (where services hold their secrets) off persistent storage, on managers and sensors:
-# encrypted swap, no hibernation image, no kdump RAM dump, no core dumps, no Chef backups/diffs on disk.
+# encrypted swap, no hibernation image, kdump only keeps the kernel log (no RAM image), no core dumps,
+# no Chef backups/diffs on disk.
 
 #################
 # Encrypted swap
@@ -74,10 +75,20 @@ execute 'Mask hibernation' do
   not_if 'systemctl is-enabled hibernate.target 2>/dev/null | grep -q masked'
 end
 
-# kdump would write the full RAM (every secret in memory) to /var/crash after a kernel crash
+# kdump stays (crash analysis), but saves only the kernel log of a crash (vmcore-dmesg.txt). A memory image
+# (vmcore) would put every secret held in RAM into /var/crash.
+kdump_dmesg_only = 'core_collector makedumpfile --dump-dmesg'
+execute 'kdump saves only the kernel log' do
+  command "sed -i '/^core_collector /d' /etc/kdump.conf && echo '#{kdump_dmesg_only}' >> /etc/kdump.conf"
+  only_if { ::File.exist?('/etc/kdump.conf') }
+  not_if "grep -qx '#{kdump_dmesg_only}' /etc/kdump.conf && [ $(grep -c '^core_collector ' /etc/kdump.conf) -eq 1 ]"
+  notifies :restart, 'service[kdump]', :delayed # rebuilds the kdump initramfs with the new collector
+end
+
 service 'kdump' do
-  action [:stop, :disable]
+  action [:enable, :start]
   only_if 'systemctl list-unit-files kdump.service | grep -q kdump'
+  ignore_failure true # no crashkernel memory reserved (e.g. small VM): kdump cannot start, nothing to dump
 end
 
 #############
