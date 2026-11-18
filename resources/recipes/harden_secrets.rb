@@ -1,19 +1,14 @@
 # Cookbook:: rb-common
 # Recipe:: harden_secrets
 #
-# Keeps memory (where services hold their secrets) off persistent storage, on managers and sensors:
-# encrypted swap, no hibernation image, kdump only keeps the kernel log (no RAM image), no core dumps,
-# no Chef backups/diffs on disk.
+# Keeps RAM contents (and the secrets in it) off persistent storage, on managers and sensors.
 
 #################
 # Encrypted swap
 #################
-# The current swap device: in fstab as swap and still carrying a swap signature.
-# Checking both matters: crypttab's "swap" option formats the device.
+# check both fstab and signature: crypttab's "swap" option formats the device
 swap_dev = nil
-# nofail + a device timeout: systemd-cryptsetup can race with udev after it formats the device, and the crypttab
-# generator gives /dev/mapper/swap no timeout, so a boot could wait forever. Then the box boots without swap instead
-# (nothing reaches the disk either way).
+# nofail + device timeout: cryptsetup/udev race can hang the boot
 SWAP_FSTAB_LINE = '/dev/mapper/swap none swap defaults,nofail,x-systemd.device-timeout=60s 0 0'.freeze unless defined?(SWAP_FSTAB_LINE)
 if ::File.exist?('/etc/fstab')
   ::File.readlines('/etc/fstab').each do |line|
@@ -26,12 +21,10 @@ if ::File.exist?('/etc/fstab')
 end
 
 if swap_dev
-  # only needed with a swap device (sensors are often installed without swap)
   dnf_package 'cryptsetup' do
     action :install
   end
 
-  # Plain dm-crypt, new random key every boot: nothing in swap survives a reboot
   file '/etc/crypttab' do
     content(lazy do
       old = ::File.exist?('/etc/crypttab') ? ::File.read('/etc/crypttab').lines.reject { |l| l.split.first == 'swap' }.join : ''
@@ -52,12 +45,11 @@ if swap_dev
     end
   end
 
-  # Switch now only if RAM can take what is in swap; otherwise the next boot switches.
+  # switch now only if RAM can take what is in swap; otherwise the next boot does
   mem = ::File.read('/proc/meminfo').scan(/^(\w+):\s+(\d+)/).to_h.transform_values(&:to_i)
   swap_used_kb = mem['SwapTotal'].to_i - mem['SwapFree'].to_i
   if mem['MemAvailable'].to_i > swap_used_kb + 1_048_576
     execute 'Switch to encrypted swap now' do
-      # blkdiscard -z zeroes the old plaintext swap before it is reused
       command "swapoff #{swap_dev} && blkdiscard -z #{swap_dev} && systemctl daemon-reload && " \
               'systemctl start systemd-cryptsetup@swap.service && swapon /dev/mapper/swap'
     end
@@ -101,20 +93,19 @@ execute 'Mask hibernation' do
   not_if 'systemctl is-enabled hibernate.target 2>/dev/null | grep -q masked'
 end
 
-# kdump stays (crash analysis), but saves only the kernel log of a crash (vmcore-dmesg.txt). A memory image
-# (vmcore) would put every secret held in RAM into /var/crash.
+# kdump keeps only the kernel log: a vmcore would hold every secret in RAM
 kdump_dmesg_only = 'core_collector makedumpfile --dump-dmesg'
 execute 'kdump saves only the kernel log' do
   command "sed -i '/^core_collector /d' /etc/kdump.conf && echo '#{kdump_dmesg_only}' >> /etc/kdump.conf"
   only_if { ::File.exist?('/etc/kdump.conf') }
   not_if "grep -qx '#{kdump_dmesg_only}' /etc/kdump.conf && [ $(grep -c '^core_collector ' /etc/kdump.conf) -eq 1 ]"
-  notifies :restart, 'service[kdump]', :delayed # rebuilds the kdump initramfs with the new collector
+  notifies :restart, 'service[kdump]', :delayed
 end
 
 service 'kdump' do
   action [:enable, :start]
   only_if 'systemctl list-unit-files kdump.service | grep -q kdump'
-  ignore_failure true # no crashkernel memory reserved (e.g. small VM): kdump cannot start, nothing to dump
+  ignore_failure true # no crashkernel memory (small VM): kdump cannot start
 end
 
 #############
@@ -155,8 +146,7 @@ end
 ###############
 # Chef backups
 ###############
-# Chef keeps a copy of every file it overwrites (old configs with passwords): keep them in memory.
-# Chef also prints a diff of every changed file, secrets included, into logs and the journal: off.
+# Chef backups keep old configs with passwords; its diffs print secrets into logs
 chef_client_settings = { 'file_backup_path' => '"/run/chef-backup"', 'diff_disabled' => 'true' }
 ruby_block 'Chef: backups in /run, no diffs in logs' do
   block do
@@ -179,9 +169,8 @@ end
 ################################
 # Chef keys: no longer world-readable
 ################################
-# admin/validator (managers only) are copies of the Chef server's own keys (the originals stay in /etc/opscode): root only.
-# On managers client.pem and the data bag key are read by the webui (user webui) too. Symlinks (OpenBao mode) are left alone.
-# The webui group only exists once the webui package is installed (a later step on a new manager, never on sensors)
+# managers: the webui also reads client.pem and the data bag key; symlinks (OpenBao) are left alone
+# the webui group only exists once the webui package is installed
 webui_group = (::Etc.getgrnam('webui') rescue nil) ? 'webui' : 'root'
 { '/etc/chef/admin.pem' => %w(root 0600), '/etc/chef/redborder-validator.pem' => %w(root 0600),
   '/etc/opscode/admin.pem' => %w(root 0600), '/etc/opscode/redborder-validator.pem' => %w(root 0600),
