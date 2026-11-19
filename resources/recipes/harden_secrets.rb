@@ -6,10 +6,10 @@
 #################
 # Encrypted swap
 #################
+# dm-crypt with a new random key every boot. Activated by rb-swap.service, not fstab: systemd often never sees
+# /dev/mapper/swap as ready (udev race after mkswap) and then boots without swap.
 # check both fstab and signature: crypttab's "swap" option formats the device
 swap_dev = nil
-# nofail + device timeout: cryptsetup/udev race can hang the boot
-SWAP_FSTAB_LINE = '/dev/mapper/swap none swap defaults,nofail,x-systemd.device-timeout=60s 0 0'.freeze unless defined?(SWAP_FSTAB_LINE)
 if ::File.exist?('/etc/fstab')
   ::File.readlines('/etc/fstab').each do |line|
     f = line.split
@@ -19,6 +19,7 @@ if ::File.exist?('/etc/fstab')
     break
   end
 end
+crypt_swap = proc { ::File.exist?('/etc/crypttab') && ::File.readlines('/etc/crypttab').any? { |l| l.split.first == 'swap' } }
 
 if swap_dev
   dnf_package 'cryptsetup' do
@@ -34,50 +35,73 @@ if swap_dev
     group 'root'
     mode '0600'
   end
+end
 
-  ruby_block 'Use /dev/mapper/swap in fstab' do
-    block do
-      fstab = ::File.read('/etc/fstab').lines.map do |l|
-        f = l.split
-        !f.empty? && f[0] == swap_dev && f[2] == 'swap' ? "#{SWAP_FSTAB_LINE}\n" : l
-      end
-      ::File.write('/etc/fstab', fstab.join)
+ruby_block 'No swap lines in fstab (rb-swap.service activates the encrypted swap)' do
+  block do
+    fstab = ::File.read('/etc/fstab').lines.reject do |l|
+      f = l.split
+      !f.empty? && f[2] == 'swap' && (f[0] == '/dev/mapper/swap' || f[0] == swap_dev)
+    end
+    ::File.write('/etc/fstab', fstab.join)
+  end
+  only_if do
+    crypt_swap.call && ::File.readlines('/etc/fstab').any? do |l|
+      f = l.split
+      !f.empty? && f[2] == 'swap' && (f[0] == '/dev/mapper/swap' || f[0] == swap_dev)
     end
   end
+  notifies :run, 'execute[systemctl daemon-reload (swap)]', :immediately
+end
 
+file '/etc/systemd/system/rb-swap.service' do
+  content <<~UNIT
+    [Unit]
+    Description=Encrypted swap (new random key every boot)
+    Requires=systemd-cryptsetup@swap.service
+    After=systemd-cryptsetup@swap.service
+    Before=swap.target
+
+    [Service]
+    Type=oneshot
+    RemainAfterExit=yes
+    ExecStart=/usr/sbin/swapon /dev/mapper/swap
+    ExecStop=/usr/sbin/swapoff /dev/mapper/swap
+
+    [Install]
+    WantedBy=swap.target
+  UNIT
+  mode '0644'
+  only_if { crypt_swap.call }
+  notifies :run, 'execute[systemctl daemon-reload (swap)]', :immediately
+end
+
+execute 'systemctl daemon-reload (swap)' do
+  command 'systemctl daemon-reload'
+  action :nothing
+end
+
+service 'rb-swap' do
+  action :enable
+  only_if { crypt_swap.call }
+end
+
+if swap_dev
   # switch now only if RAM can take what is in swap; otherwise the next boot does
   mem = ::File.read('/proc/meminfo').scan(/^(\w+):\s+(\d+)/).to_h.transform_values(&:to_i)
   swap_used_kb = mem['SwapTotal'].to_i - mem['SwapFree'].to_i
   if mem['MemAvailable'].to_i > swap_used_kb + 1_048_576
     execute 'Switch to encrypted swap now' do
-      command "swapoff #{swap_dev} && blkdiscard -z #{swap_dev} && systemctl daemon-reload && " \
-              'systemctl start systemd-cryptsetup@swap.service && swapon /dev/mapper/swap'
+      command "swapoff #{swap_dev} && blkdiscard -z #{swap_dev} && systemctl start rb-swap.service"
     end
   else
     Chef::Log.warn("harden_secrets: #{swap_used_kb} kB in swap, not enough free RAM to switch now; encrypted swap starts at next boot")
   end
 end
 
-ruby_block 'Encrypted swap never blocks the boot' do
-  block do
-    fstab = ::File.read('/etc/fstab').lines.map do |l|
-      f = l.split
-      !f.empty? && f[0] == '/dev/mapper/swap' && f[2] == 'swap' ? "#{SWAP_FSTAB_LINE}\n" : l
-    end
-    ::File.write('/etc/fstab', fstab.join)
-  end
-  only_if do
-    ::File.exist?('/etc/fstab') && ::File.readlines('/etc/fstab').any? do |l|
-      f = l.split
-      !f.empty? && f[0] == '/dev/mapper/swap' && f[2] == 'swap' && !f[3].to_s.include?('x-systemd.device-timeout')
-    end
-  end
-  notifies :run, 'execute[systemctl daemon-reload (fstab)]', :immediately
-end
-
-execute 'systemctl daemon-reload (fstab)' do
-  command 'systemctl daemon-reload'
-  action :nothing
+execute 'Start the encrypted swap' do
+  command 'systemctl start rb-swap.service'
+  only_if { crypt_swap.call && ::File.read('/proc/swaps').lines.size <= 1 }
 end
 
 ##############################
