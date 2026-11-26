@@ -207,7 +207,7 @@ end
 # /run) are not changed. The webui group exists only once the webui package is installed.
 webui_group = (::Etc.getgrnam('webui') rescue nil) ? 'webui' : 'root'
 { '/etc/chef/admin.pem' => %w(root 0600), '/etc/chef/redborder-validator.pem' => %w(root 0600),
-  '/etc/opscode/admin.pem' => %w(root 0600), '/etc/opscode/redborder-validator.pem' => %w(root 0600),
+  '/etc/cinc-project/admin.pem' => %w(root 0600), '/etc/cinc-project/redborder-validator.pem' => %w(root 0600),
   '/etc/chef/client.pem' => [webui_group, '0640'], '/etc/chef/encrypted_data_bag_secret' => [webui_group, '0640'] }.each do |f, (grp, mode)|
   file f do
     owner 'root'
