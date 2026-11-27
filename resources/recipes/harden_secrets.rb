@@ -205,7 +205,11 @@ end
 # Installations before this change made these keys readable by every user. They are now readable by root only; on
 # managers the webui group also reads the node key and the data bag key. Keys provided by OpenBao (symlinks to
 # /run) are not changed. The webui group exists only once the webui package is installed.
-webui_group = (::Etc.getgrnam('webui') rescue nil) ? 'webui' : 'root'
+webui_group = begin
+                ::Etc.getgrnam('webui') && 'webui'
+              rescue ArgumentError
+                'root'
+              end
 { '/etc/chef/admin.pem' => %w(root 0600), '/etc/chef/redborder-validator.pem' => %w(root 0600),
   '/etc/cinc-project/admin.pem' => %w(root 0600), '/etc/cinc-project/redborder-validator.pem' => %w(root 0600),
   '/etc/chef/client.pem' => [webui_group, '0640'], '/etc/chef/encrypted_data_bag_secret' => [webui_group, '0640'] }.each do |f, (grp, mode)|
